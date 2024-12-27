@@ -13,6 +13,7 @@ export default function BlogOverview({ blogList }) {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [blogFormData, setBlogFormData] = useState(initialBlogFormData);
+  const [currentEditedBlogId, setCurrentEditedBlogId] = useState(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -21,23 +22,40 @@ export default function BlogOverview({ blogList }) {
   async function handleSaveBlogData() {
     try {
       setLoading(true);
-      const apiResponse = await fetch("/api/add-blog", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(blogFormData),
-      });
+      const apiResponse =
+        currentEditedBlogId !== null
+          ? await fetch(`/api/update-blog?id=${currentEditedBlogId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(blogFormData),
+            })
+          : await fetch("/api/add-blog", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(blogFormData),
+            });
       const result = await apiResponse.json();
       // Handle success
       if (result.success) {
-        toast({
-          description: "Blog Added Successfully",
-        });
+        if (result.message === "Blog is updated successfully") {
+          toast({
+            description: "Blog Updated Successfully",
+          });
+        } else {
+          toast({
+            description: "Blog Added Successfully",
+          });
+        }
+
         setBlogFormData(initialBlogFormData);
         setOpenDialog(false);
         setLoading(false);
         router.refresh();
+        setCurrentEditedBlogId(null);
       } else {
         toast({
           title: "Failed to add blog",
@@ -76,6 +94,19 @@ export default function BlogOverview({ blogList }) {
     }
   }
 
+  async function handleEditBlogById(blog) {
+    try {
+      setCurrentEditedBlogId(blog._id);
+      setBlogFormData({
+        title: blog?.title,
+        description: blog?.description,
+      });
+      setOpenDialog(true);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   return (
     <div>
       <AddNewBlog
@@ -86,6 +117,8 @@ export default function BlogOverview({ blogList }) {
         blogFormData={blogFormData}
         setBlogFormData={setBlogFormData}
         handleSaveBlogData={handleSaveBlogData}
+        currentEditedBlogId={currentEditedBlogId}
+        setCurrentEditedBlogId={setCurrentEditedBlogId}
       />
       <div className="mt-10">
         <h1 className="text-3xl font-bold">Blogs</h1>
@@ -97,7 +130,12 @@ export default function BlogOverview({ blogList }) {
                   Blog Title-{idx}: {blog.title}
                 </li>
                 <div className="flex items-center gap-2">
-                  <button className="p-1 bg-blue-500 text-white">Edit</button>
+                  <button
+                    onClick={() => handleEditBlogById(blog)}
+                    className="p-1 bg-blue-500 text-white"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDeleteBlogById(blog._id)}
                     className="p-1 bg-red-500 text-white"
