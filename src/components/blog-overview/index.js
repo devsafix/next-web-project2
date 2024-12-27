@@ -51,6 +51,31 @@ export default function BlogOverview({ blogList }) {
     }
   }
 
+  async function handleDeleteBlogById(getCurrentBlogId) {
+    try {
+      const apiResponse = await fetch(
+        `/api/delete-blog?id=${getCurrentBlogId}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const result = await apiResponse.json();
+
+      if (result.success) {
+        toast({
+          description: "Blog is deleted successfully",
+        });
+        router.refresh();
+      } else {
+        toast({
+          title: "Failed to delete blog",
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   return (
     <div>
       <AddNewBlog
@@ -73,7 +98,12 @@ export default function BlogOverview({ blogList }) {
                 </li>
                 <div className="flex items-center gap-2">
                   <button className="p-1 bg-blue-500 text-white">Edit</button>
-                  <button className="p-1 bg-red-500 text-white">Delete</button>
+                  <button
+                    onClick={() => handleDeleteBlogById(blog._id)}
+                    className="p-1 bg-red-500 text-white"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
